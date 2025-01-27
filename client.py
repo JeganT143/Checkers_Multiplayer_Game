@@ -9,12 +9,9 @@ def main():
     n = Network()
     msg  = n.get_msg()
     print(msg)
-    reply = n.send("Waiting for initial position")
-    if reply != "waiting for second player" :
-        initial_pos = reply
-        print("initial Position recived")
-        print_pos(initial_pos)
-    else:
-        print(f"Server says : {reply}")
+    initial_pos= n.send("Waiting for initial position")
+    print("initial pos recived")
+    print_pos(initial_pos)
+    
     
 main()
