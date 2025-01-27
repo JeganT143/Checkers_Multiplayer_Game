@@ -7,6 +7,7 @@ class Network():
         self.server = socket.gethostbyname(socket.gethostname())
         self.port = 5050
         self.msg = self.connect()
+        self.pos = []
 
     def connect(self):
         try:
@@ -22,7 +23,6 @@ class Network():
         try:
             self.client_sck.send(pickle.dumps(data))
             msg = pickle.loads(self.client_sck.recv(2048))
-            print(f"Msg received from server {msg}")
             return msg
         except socket.error as e:
             print(e)
