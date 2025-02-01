@@ -7,11 +7,12 @@ class Network():
         self.server = socket.gethostbyname(socket.gethostname())  # gets IP address of the machine running the client side
         self.port = 5050                         
         self.msg = self.connect()
+        self.pos = []
 
     def connect(self):
         try:
-            self.client_sck.connect((self.server, self.port))         # connects to server using IP address
-            return pickle.loads(self.client_sck.recv(2048))            
+            self.client_sck.connect((self.server, self.port))
+            return pickle.loads(self.client_sck.recv(2048))
         except socket.error as e:
             print(e)
         
@@ -20,9 +21,8 @@ class Network():
     
     def send(self, data):
         try:
-            self.client_sck.send(pickle.dumps(data))      # data is sent using pickle.dump 
-            msg = pickle.loads(self.client_sck.recv(2048))    # data is received with pickle.loads
-            print(f"Msg received from server {msg}")
+            self.client_sck.send(pickle.dumps(data))
+            msg = pickle.loads(self.client_sck.recv(2048))
             return msg
         except socket.error as e:
             print(e)
