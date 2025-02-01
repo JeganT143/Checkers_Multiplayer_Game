@@ -5,7 +5,7 @@ import pickle
 players = ['Player1', 'Player2']
 
 def threaded_client(conn):
-    conn.send(pickle.dumps(players))
+    conn.send(pickle.dumps(players))                # 
     reply = ''
     while True:
         try:
