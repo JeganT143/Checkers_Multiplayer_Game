@@ -39,8 +39,8 @@ Ensure you have **Python 3.x** installed on your system.
 
 ### Step 1: Clone the Repository
 ```bash
-git clone https://github.com/your-repo/multiplayer-checkers.git
-cd multiplayer-checkers
+git clone https://github.com/JeganT143/Checkers_Multiplayer_Game.git
+cd Checkers_Multiplayer_Game
 ```
 
 ### Step 2: Install Dependencies
