@@ -8,6 +8,8 @@ pygame.mixer.init()
 
 SELECT_SOUND = pygame.mixer.Sound("select.wav") 
 MOVE_SOUND = pygame.mixer.Sound("move.wav") 
+START_SOUND = pygame.mixer.Sound("game_start.wav")
+
 
 FPS = 60
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -129,6 +131,7 @@ def main():
     pygame.quit()
 
 def menu_screen():
+    pygame.mixer.Sound.play(START_SOUND)
     run = True
     clock = pygame.time.Clock()
     while run:
