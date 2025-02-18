@@ -1,13 +1,24 @@
-from network import Network
 import pygame
+from network import Network
 from checkers.constants import WIDTH, HEIGHT, SQUARE_SIZE, YELLOW, WHITE, BLACK
-import pickle
+import socket
 
 pygame.font.init()
+pygame.mixer.init() 
+
+SELECT_SOUND = pygame.mixer.Sound("select.wav") 
+MOVE_SOUND = pygame.mixer.Sound("move.wav") 
 
 FPS = 60
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Checkers - Multiplayer")
+
+def draw_text(surface, text, size, color, center):
+    """Helper function to draw centered text."""
+    font = pygame.font.SysFont("comicsans", size)
+    text_surface = font.render(text, True, color)
+    rect = text_surface.get_rect(center=center)
+    surface.blit(text_surface, rect)
 
 def get_row_col_from_mouse(pos):
     x, y = pos
@@ -16,107 +27,105 @@ def get_row_col_from_mouse(pos):
     return row, col
 
 class NetworkGame:
-    """
-    Wraps the network connection and the game state received from the server.
-    """
-    def __init__(self, win):
-        self.win = win
-        self.network = Network()
-        self.player = self.network.getP()  # 0 for WHITE, 1 for BLACK
-        # Get the initial game state from the server
+    def __init__(self):
+        self.network = Network()  
+        self.player = self.network.getP()  # 0 for WHITE, 1 for BLACK.
+        # Get the initial game state (a dictionary)
         self.game = self.network.send("get")
         self.selected = None
 
     def update(self):
-        # Request the latest game state from the server
         self.game = self.network.send("get")
-        
-        # If the second player hasn't connected, display a waiting message.
-        if not self.game.ready:
-            self.win.fill((0, 0, 0))
-            font = pygame.font.SysFont("comicsans", 50)
-            text = font.render("Waiting for second player...", True, (255, 255, 255))
-            self.win.blit(
-                text,
-                (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - text.get_height() // 2),
-            )
+        # Now self.game is a dictionary with keys: 'ready', 'turn', 'winner', 'board'
+        if not self.game['ready']:
+            WIN.fill((30, 30, 30))
+            draw_text(WIN, "Waiting for second player...", 40, (255, 255, 255), (WIDTH//2, HEIGHT//2))
         else:
-            self.game.board.draw(self.win)
+            # Draw the board from the game state.
+            self.game['board'].draw(WIN)
             self.draw_valid_moves()
-            self.draw_turn_indicator()
+            self.draw_ui()
 
     def draw_valid_moves(self):
-        # If a piece is selected, highlight its valid moves.
         if self.selected is not None:
             row, col = self.selected
-            piece = self.game.board.get_piece(row, col)
-            # Only show moves if the selected piece belongs to the current player.
+            piece = self.game['board'].get_piece(row, col)
             my_color = WHITE if self.player == 0 else BLACK
             if piece != 0 and piece.color == my_color:
-                valid_moves = self.game.board.get_valid_moves(piece)
+                valid_moves = self.game['board'].get_valid_moves(piece)
                 for move in valid_moves:
                     r, c = move
-                    pygame.draw.rect(
-                        self.win, YELLOW, (c * SQUARE_SIZE, r * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE)
-                    )
+                    s = pygame.Surface((SQUARE_SIZE, SQUARE_SIZE))
+                    s.set_alpha(100)
+                    s.fill(YELLOW)
+                    WIN.blit(s, (c * SQUARE_SIZE, r * SQUARE_SIZE))
 
-    def draw_turn_indicator(self):
-        # Draw a simple turn indicator at the top of the screen.
+    def draw_ui(self):
         my_color = WHITE if self.player == 0 else BLACK
-        font = pygame.font.SysFont("comicsans", 30)
-        if self.game.turn == my_color:
-            text = font.render("Your Turn", True, (0, 255, 0))
-        else:
-            text = font.render("Opponent's Turn", True, (255, 0, 0))
-        self.win.blit(text, (10, 10))
+        turn_text = "Your Turn" if self.game['turn'] == my_color else "Opponent's Turn"
+        turn_color = (0, 255, 0) if self.game['turn'] == my_color else (255, 0, 0)
+        draw_text(WIN, turn_text, 30, turn_color, (WIDTH//2, 20))
+        color_text = "You are WHITE" if self.player == 0 else "You are BLACK"
+        draw_text(WIN, color_text, 24, (200,200,200), (90, HEIGHT-20))
+        draw_text(WIN, "Select piece then destination", 20, (200,200,200), (WIDTH//2, HEIGHT-20))
 
     def select(self, row, col):
-        # Do not allow moves if the game is not ready.
-        if not self.game.ready:
+        if not self.game['ready']:
             return
-
-        # Determine the player's color.
         my_color = WHITE if self.player == 0 else BLACK
-        
-        # Check if it's this player's turn.
-        if self.game.turn != my_color:
+        if self.game['turn'] != my_color:
             print("Not your turn!")
             return
-
         if self.selected is None:
             self.selected = (row, col)
+            SELECT_SOUND.play() 
         else:
-            # Format the move as "start_row,start_col:end_row,end_col"
             move_str = f"{self.selected[0]},{self.selected[1]}:{row},{col}"
-            self.network.send(move_str)
+            response = self.network.send(move_str)  # Sending move request to server
+            
+            if response == "valid":
+                MOVE_SOUND.play() 
+            
             self.selected = None
 
 def main():
     run = True
     clock = pygame.time.Clock()
-    net_game = NetworkGame(WIN)
+    net_game = NetworkGame()
 
     while run:
         clock.tick(FPS)
         net_game.update()
         pygame.display.update()
 
-        # Check for a winner only if both players are connected.
-        if net_game.game.ready and net_game.game.winner() is not None:
-            winner = net_game.game.winner()
-            print("Winner:", "WHITE" if winner == WHITE else "BLACK")
-            run = False
+        if net_game.game['ready'] and net_game.game['winner'] is not None:
+            winner = net_game.game['winner']
+            win_color = "WHITE" if winner == WHITE else "BLACK"
+            WIN.fill((30,30,30))
+            draw_text(WIN, "Game Over!", 50, (255,255,255), (WIDTH//2, HEIGHT//2 - 50))
+            draw_text(WIN, f"Winner: {win_color}", 40, (255,215,0), (WIDTH//2, HEIGHT//2))
+            draw_text(WIN, "Press any key to exit...", 30, (200,200,200), (WIDTH//2, HEIGHT//2 + 50))
+            pygame.display.update()
+            waiting = True
+            while waiting:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        waiting = False
+                        run = False
+                    if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                        waiting = False
+                        run = False
+                clock.tick(FPS)
+            break
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
             if event.type == pygame.MOUSEBUTTONDOWN:
-                # Only process clicks if the game is ready.
-                if net_game.game.ready:
+                if net_game.game['ready']:
                     pos = pygame.mouse.get_pos()
                     row, col = get_row_col_from_mouse(pos)
                     net_game.select(row, col)
-
     pygame.quit()
 
 def menu_screen():
@@ -124,16 +133,15 @@ def menu_screen():
     clock = pygame.time.Clock()
     while run:
         clock.tick(FPS)
-        WIN.fill((225, 225, 53))
-        font = pygame.font.SysFont("comicsans", 60)
-        text = font.render("Click to Play!", 1, (255, 0, 0))
-        WIN.blit(text, (100, 200))
+        WIN.fill((50,50,50))
+        draw_text(WIN, "Multiplayer Checkers", 60, (255,0,0), (WIDTH//2, HEIGHT//2 - 50))
+        draw_text(WIN, "Press any key or click to play!", 40, (255,255,255), (WIDTH//2, HEIGHT//2 + 20))
         pygame.display.update()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
                 pygame.quit()
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
                 run = False
     main()
 

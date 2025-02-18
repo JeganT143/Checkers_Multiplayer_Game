@@ -1,12 +1,17 @@
 import socket
 import pickle
+import pygame
+
 
 class Network():
-    def __init__(self):
+    def __init__(self, server_ip=None):
         self.client_sck = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server = socket.gethostbyname(socket.gethostname())
+        # self.server = "10.50.60.110"
         self.port = 5050
         self.p = self.connect()
+        self.select_sound = pygame.mixer.Sound("select.wav")
+        self.move_sound = pygame.mixer.Sound("move.wav")
         
     def getP(self):
         return self.p
@@ -21,7 +26,6 @@ class Network():
     
     def send(self, data):
         try:
-            # If sending a string command, encode it as UTF-8.
             if isinstance(data, str):
                 self.client_sck.send(data.encode())
             else:

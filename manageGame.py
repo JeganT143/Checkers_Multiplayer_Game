@@ -4,16 +4,16 @@ from checkers.constants import WHITE, BLACK
 class Manage:
     def __init__(self, id):
         self.id = id
-        self.board = Board()       # The board (with pieces and positions)
-        self.turn = WHITE          # WHITE (player 0) always starts
-        self.ready = False         # Set to True when both players are connected
+        self.board = Board()       # The board with pieces and positions.
+        self.turn = WHITE          # WHITE (player 0) always starts.
+        self.ready = False         # Set to True when both players are connected.
         self.p1Went = False
         self.p2Went = False
 
     def play(self, player, move):
         """
         Expects a move string formatted as "start_row,start_col:end_row,end_col"
-        and attempts to perform the move only if it's that player's turn.
+        and performs the move only if it's that player's turn.
         """
         try:
             start, end = move.split(":")
@@ -28,12 +28,12 @@ class Manage:
             print("No piece at starting position!")
             return
 
-        # Check if it's the correct turn.
+        # Enforce turn order.
         if self.turn != piece.color:
             print("Not your turn!")
             return
 
-        # Verify that the correct player is moving their own piece.
+        # Verify the player is moving their own piece.
         if (player == 0 and piece.color != WHITE) or (player == 1 and piece.color != BLACK):
             print("Not your piece!")
             return
