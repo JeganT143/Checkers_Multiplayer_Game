@@ -84,9 +84,8 @@ class NetworkGame:
         else:
             move_str = f"{self.selected[0]},{self.selected[1]}:{row},{col}"
             response = self.network.send(move_str)  # Sending move request to server
+            MOVE_SOUND.play() 
             
-            if response == "valid":
-                MOVE_SOUND.play() 
             
             self.selected = None
 
