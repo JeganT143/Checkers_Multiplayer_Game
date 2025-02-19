@@ -83,8 +83,9 @@ pip install pygame
 
 
 ## Contributors
-- **Your Name** - Developer
-- **Your Team Members**
+- **Jegan** https://github.com/JeganT143
+- **Prabhani Jayaweera** https://github.com/Fres02
+- **Oshani Sooriyaarachi** https://github.com/OshaniSooriyaarachchi
 
 ---
 Happy Gaming! 🎮
